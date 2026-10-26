@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>رادار بازار و مایکت — داشبورد زنده GitHub Pages</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: 'Vazirmatn', system-ui, sans-serif; background-color: #0B0F19; color: #F1F5F9; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-[#0B0F19] text-slate-100">
+  <header class="flex flex-wrap items-center justify-between gap-4 px-6 py-4 border-b border-slate-800 bg-[#0B0F19]">
+    <div class="text-lg font-bold tracking-tight text-slate-100">رادار بازار و مایکت (GitHub Pages)</div>
+    <div class="flex items-center gap-3">
+      <span id="updated-at" class="text-xs text-slate-400">در حال بارگذاری دیتای زنده…</span>
+      <button id="reload-btn" type="button" class="px-4 py-2 text-xs font-semibold text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition-colors">
+        بروزرسانی لیست از apps_data.json
+      </button>
+    </div>
+  </header>
+
+  <main class="flex-1 max-w-7xl w-full mx-auto px-6 py-8 space-y-6">
+    <section class="rounded-xl bg-[#111827] border border-slate-800 p-6 space-y-4">
+      <h1 class="text-xl font-bold text-slate-100">دیده‌بان ۲۴ ساعته جدیدترین برنامه‌های کافه‌بازار و مایکت</h1>
+      <p class="text-xs text-slate-400 leading-relaxed">
+        این صفحه روی <code class="text-sky-400 font-mono" dir="ltr">github.io</code> میزبانی شده و دیتای خود را به صورت خودکار از فایل <code class="text-emerald-400 font-mono" dir="ltr">apps_data.json</code> (که هر ۲۴ ساعت توسط ورک‌فلوی GitHub Actions و اسکریپت <code class="text-slate-200 font-mono" dir="ltr">bot.py</code> از API کافه‌بازار و مایکت استخراج می‌شود) دریافت می‌کند.
+      </p>
+      <div class="grid grid-cols-3 gap-4 pt-2 border-t border-slate-800">
+        <div>
+          <div class="text-xs text-slate-400">کل برنامه‌های جدید</div>
+          <div id="stat-total" class="text-2xl font-bold text-slate-100 mt-1">0</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400">کافه‌بازار</div>
+          <div id="stat-bazaar" class="text-2xl font-bold text-emerald-400 mt-1">0</div>
+        </div>
+        <div>
+          <div class="text-xs text-slate-400">مایکت</div>
+          <div id="stat-myket" class="text-2xl font-bold text-sky-400 mt-1">0</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="flex flex-wrap items-center justify-between gap-4 rounded-xl bg-[#111827] border border-slate-800 p-4">
+      <div class="flex items-center gap-1 p-1 bg-[#0B0F19] rounded-lg border border-slate-800">
+        <button data-market="all" class="market-btn px-3.5 py-1.5 text-xs font-medium rounded-md bg-sky-600 text-white">همه مارکت‌ها</button>
+        <button data-market="bazaar" class="market-btn px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-100">کافه‌بازار</button>
+        <button data-market="myket" class="market-btn px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-100">مایکت</button>
+      </div>
+      <div class="flex flex-wrap items-center gap-3 flex-1 justify-end">
+        <select id="category-select" class="px-3 py-2 text-xs bg-[#0B0F19] border border-slate-700 rounded-lg text-slate-100">
+          <option value="all">همه دسته‌بندی‌ها</option>
+        </select>
+        <input id="search-input" type="search" placeholder="جستجو در نام یا توضیحات برنامه…" class="w-64 px-3 py-2 text-xs bg-[#0B0F19] border border-slate-700 rounded-lg text-slate-100 placeholder:text-slate-500" />
+      </div>
+    </section>
+
+    <section id="apps-grid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></section>
+  </main>
+
+  <script>
+    let allApps = [];
+    let currentMarket = 'all';
+    let currentCategory = 'all';
+    let searchQuery = '';
+
+    async function loadApps() {
+      try {
+        const res = await fetch('./apps_data.json?t=' + Date.now());
+        const data = await res.json();
+        allApps = Array.isArray(data.apps) ? data.apps : [];
+        if (data.updatedAt) {
+          document.getElementById('updated-at').textContent = 'آخرین بروزرسانی: ' + new Date(data.updatedAt).toLocaleString('fa-IR');
+        }
+        populateCategories();
+        renderApps();
+      } catch (e) {
+        document.getElementById('updated-at').textContent = 'خطا در خواندن apps_data.json';
+      }
+    }
+
+    function populateCategories() {
+      const select = document.getElementById('category-select');
+      const cats = new Map();
+      allApps.forEach(a => { if (a.categoryId && a.categoryTitle) cats.set(a.categoryId, a.categoryTitle); });
+      select.innerHTML = '<option value="all">همه دسته‌بندی‌ها (' + cats.size + ' دسته)</option>';
+      cats.forEach((title, id) => {
+        const opt = document.createElement('option');
+        opt.value = id;
+        opt.textContent = title;
+        select.appendChild(opt);
+      });
+      select.value = currentCategory;
+    }
+
+    function renderApps() {
+      document.getElementById('stat-total').textContent = allApps.length;
+      document.getElementById('stat-bazaar').textContent = allApps.filter(a => a.market === 'bazaar').length;
+      document.getElementById('stat-myket').textContent = allApps.filter(a => a.market === 'myket').length;
+
+      const filtered = allApps.filter(a => {
+        if (currentMarket !== 'all' && a.market !== currentMarket) return false;
+        if (currentCategory !== 'all' && a.categoryId !== currentCategory) return false;
+        if (searchQuery) {
+          const q = searchQuery.toLowerCase();
+          return (a.name || '').toLowerCase().includes(q) || (a.description || '').toLowerCase().includes(q) || (a.packageName || '').toLowerCase().includes(q);
+        }
+        return true;
+      });
+
+      const grid = document.getElementById('apps-grid');
+      if (!filtered.length) {
+        grid.innerHTML = '<div class="col-span-2 rounded-xl bg-[#111827] border border-slate-800 p-10 text-center text-sm text-slate-400">برنامه‌ای برای این فیلتر یافت نشد.</div>';
+        return;
+      }
+
+      grid.innerHTML = filtered.map(app => `
+        <article class="rounded-xl bg-[#111827] border border-slate-800 p-6 flex flex-col justify-between gap-4 hover:border-slate-700 transition-colors">
+          <div class="space-y-4">
+            <div class="flex items-start gap-4">
+              <img src="${app.iconUrl || ''}" alt="${app.name}" class="w-16 h-16 rounded-xl object-cover bg-slate-800 shrink-0" onerror="this.style.display='none'" />
+              <div class="min-w-0 flex-1">
+                <h2 class="text-base font-bold text-slate-100">${app.name}</h2>
+                <div class="flex flex-wrap items-center gap-1.5 text-xs text-slate-400 mt-1">
+                  <span class="${app.market === 'bazaar' ? 'text-emerald-400' : 'text-sky-400'} font-medium">${app.marketLabel || (app.market === 'bazaar' ? 'کافه‌بازار' : 'مایکت')}</span>
+                  <span>·</span>
+                  <span>دسته ${app.categoryTitle || ''}</span>
+                  <span>·</span>
+                  <span>نسخه ${app.version || 'جدید'}</span>
+                  <span>·</span>
+                  <span>${app.author || ''}</span>
+                </div>
+                <div class="text-[11px] text-slate-500 font-mono truncate mt-1" dir="ltr">${app.packageName}</div>
+              </div>
+            </div>
+            <div class="pt-3 border-t border-slate-800/80">
+              <div class="text-xs font-medium text-slate-400 mb-1">توضیحات برنامه:</div>
+              <p class="text-xs text-slate-300 leading-relaxed">${app.description || ''}</p>
+            </div>
+          </div>
+          <div class="flex items-center justify-between pt-3 border-t border-slate-800/80">
+            <a href="${app.storeUrl}" target="_blank" rel="noopener noreferrer" class="text-xs text-sky-400 hover:text-sky-300">مشاهده و دانلود از ${app.marketLabel || 'مارکت'} ↗</a>
+            <span class="text-[11px] text-slate-500 font-mono" dir="ltr">${app.apiSourcePath || ''}</span>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    document.querySelectorAll('.market-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        currentMarket = btn.dataset.market;
+        document.querySelectorAll('.market-btn').forEach(b => {
+          b.className = b === btn
+            ? 'market-btn px-3.5 py-1.5 text-xs font-medium rounded-md bg-sky-600 text-white'
+            : 'market-btn px-3.5 py-1.5 text-xs font-medium rounded-md text-slate-400 hover:text-slate-100';
+        });
+        renderApps();
+      });
+    });
+
+    document.getElementById('category-select').addEventListener('change', e => {
+      currentCategory = e.target.value;
+      renderApps();
+    });
+
+    document.getElementById('search-input').addEventListener('input', e => {
+      searchQuery = e.target.value;
+      renderApps();
+    });
+
+    document.getElementById('reload-btn').addEventListener('click', loadApps);
+    loadApps();
+  </script>
+</body>
+</html>

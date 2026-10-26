@@ -1,0 +1,54 @@
+{
+  "updatedAt": "2026-10-26T06:17:31.153Z",
+  "totalApps": 3,
+  "apps": [
+    {
+      "id": "myket:danlodr.mam",
+      "market": "myket",
+      "marketLabel": "مایکت",
+      "packageName": "danlodr.mam",
+      "name": "دانلودر روبیکا و اینستاگرام",
+      "author": "ماجدMAM",
+      "version": "۱.۰",
+      "iconUrl": "https://mir-image-1.myket.ir/icons/large/e2fb3bf4-d8fc-496e-84b1-ca03ea243c0e.png",
+      "description": "با دانلودر، لینک پست‌های روبیکا و اینستاگرام را به سادگی دریافت و ذخیره کنید. امکانات برنامه: دانلود از روبیکا با کیفیت اصلی و دریافت پست‌ها و ریلزهای اینستاگرام.",
+      "categoryId": "category_social",
+      "categoryTitle": "شبکه‌های اجتماعی",
+      "storeUrl": "https://myket.ir/app/danlodr.mam",
+      "apiSourcePath": "v1/applications/package/Category_New_32",
+      "discoveredAt": "2026-10-26T06:17:31.153Z"
+    },
+    {
+      "id": "bazaar:com.fariborzgholami.planyar",
+      "market": "bazaar",
+      "marketLabel": "کافه‌بازار",
+      "packageName": "com.fariborzgholami.planyar",
+      "name": "پلان یار",
+      "author": "فریبرز غلامی",
+      "version": "۱.۰.۰",
+      "iconUrl": "https://s.cafebazaar.ir/images/icons/com.fariborzgholami.planyar-08bf7f5f-55de-4096-b3cc-278125199fb0_512x512.webp",
+      "description": "پلان یار ابزاری کاربردی برای برنامه‌ریزی روزانه، ثبت وظایف، مدیریت زمان و پیگیری پیشرفت اهداف شخصی و کاری با رابط کاربری ساده و فارسی است.",
+      "categoryId": "category_tools",
+      "categoryTitle": "ابزارها",
+      "storeUrl": "https://cafebazaar.ir/app/com.fariborzgholami.planyar",
+      "apiSourcePath": "list~app~automatic~APP_NEW~tools",
+      "discoveredAt": "2026-10-26T06:17:31.153Z"
+    },
+    {
+      "id": "bazaar:ir.nexbytes.toolbox",
+      "market": "bazaar",
+      "marketLabel": "کافه‌بازار",
+      "packageName": "ir.nexbytes.toolbox",
+      "name": "جعبه ابزار",
+      "author": "نکس بایتس",
+      "version": "۱.۲.۰",
+      "iconUrl": "https://s.cafebazaar.ir/images/icons/ir.nexbytes.toolbox-915730cf-7290-4a8e-a132-b8b876a84f33_512x512.webp",
+      "description": "جعبه ابزار شامل مجموعه‌ای از ابزارهای ضروری روزمره، خط‌کش، تراز، قطب‌نما، چراغ‌قوه و مبدل واحدها است که شما را از نصب برنامه‌های متعدد بی‌نیاز می‌کند.",
+      "categoryId": "category_tools",
+      "categoryTitle": "ابزارها",
+      "storeUrl": "https://cafebazaar.ir/app/ir.nexbytes.toolbox",
+      "apiSourcePath": "list~app~automatic~APP_NEW~tools",
+      "discoveredAt": "2026-10-26T06:17:31.153Z"
+    }
+  ]
+}

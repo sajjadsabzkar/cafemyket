@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-ربات تلگرام دیده‌بان ۲۴ ساعته کافه‌بازار و مایکت (ویژه GitHub Actions و سرور)
+ربات تلگرام دیده‌بان ۲۴ ساعته کافه‌بازار و مایکت (ویژه GitHub Actions + GitHub Pages github.io)
 - CafeBazaar API: GetPageV2Request با مسیر list~app~automatic~APP_NEW~<slug>
 - Myket API: GET /v1/applications/package/Category_New_<id>?limit=24&offset=0
-- ذخیره خودکار برنامه‌های ارسال‌شده در seen_apps.json برای جلوگیری از ارسال تکراری در GitHub Actions
+- ذخیره خودکار برنامه‌های ارسال‌شده در seen_apps.json
+- ذخیره خودکار لیست کامل برنامه‌ها در apps_data.json برای نمایش زنده روی صفحه وب github.io
 """
 
 import argparse
+import datetime
 import hashlib
 import json
 import os
@@ -23,6 +25,8 @@ TELEGRAM_CHAT_ID = os.environ.get("TELEGRAM_CHAT_ID", "").strip()
 MAX_APPS_PER_CATEGORY = int(os.environ.get("MAX_APPS_PER_CATEGORY", "24"))
 SCAN_INTERVAL_SECONDS = int(os.environ.get("SCAN_INTERVAL_HOURS", "24")) * 3600
 SEEN_APPS_FILE = Path(os.environ.get("SEEN_APPS_FILE", "seen_apps.json"))
+APPS_DATA_FILE = Path(os.environ.get("APPS_DATA_FILE", "apps_data.json"))
+
 
 # ==================== اندپوینت‌های رسمی کافه‌بازار و مایکت ====================
 BAZAAR_PAGE_URL = "https://api.cafebazaar.ir/rest-v1/process/GetPageV2Request"
@@ -40,60 +44,70 @@ MYKET_VERSION = "1017"
 
 CATEGORIES = [
     {
+        "id": "category_tools",
         "slug": "tools",
         "bazaar_list_path": "list~app~automatic~APP_NEW~tools",
         "myket_new_package_key": "Category_New_14",
         "title_fa": "ابزارها"
     },
     {
+        "id": "category_social",
         "slug": "social",
         "bazaar_list_path": "list~app~automatic~APP_NEW~social",
         "myket_new_package_key": "Category_New_32",
         "title_fa": "شبکه‌های اجتماعی"
     },
     {
+        "id": "category_finance",
         "slug": "finance",
         "bazaar_list_path": "list~app~automatic~APP_NEW~finance",
         "myket_new_package_key": "Category_New_20",
         "title_fa": "امور مالی"
     },
     {
+        "id": "category_education",
         "slug": "education",
         "bazaar_list_path": "list~app~automatic~APP_NEW~education",
         "myket_new_package_key": "Category_New_24",
         "title_fa": "آموزش"
     },
     {
+        "id": "category_entertainment",
         "slug": "entertainment",
         "bazaar_list_path": "list~app~automatic~APP_NEW~entertainment",
         "myket_new_package_key": "Category_New_11",
         "title_fa": "سرگرمی"
     },
     {
+        "id": "category_shopping",
         "slug": "shopping",
         "bazaar_list_path": "list~app~automatic~APP_NEW~shopping",
         "myket_new_package_key": "Category_New_15",
         "title_fa": "خرید"
     },
     {
+        "id": "category_photography",
         "slug": "photography",
         "bazaar_list_path": "list~app~automatic~APP_NEW~photography",
         "myket_new_package_key": "Category_New_4",
         "title_fa": "عکاسی و ویدیو"
     },
     {
+        "id": "category_medical",
         "slug": "medical",
         "bazaar_list_path": "list~app~automatic~APP_NEW~medical",
         "myket_new_package_key": "Category_New_33",
         "title_fa": "پزشکی"
     },
     {
+        "id": "category_action",
         "slug": "action",
         "bazaar_list_path": "list~app~automatic~APP_NEW~action",
         "myket_new_package_key": "Category_New_26",
         "title_fa": "بازی اکشن"
     },
     {
+        "id": "category_strategy",
         "slug": "strategy",
         "bazaar_list_path": "list~app~automatic~APP_NEW~strategy",
         "myket_new_package_key": "Category_New_124",
@@ -343,11 +357,31 @@ def run_single_scan():
         print(f"خطا در اتصال به مایکت: {e}")
 
     new_sent = 0
+    all_discovered = []
+    now_iso = datetime.datetime.now(datetime.timezone.utc).isoformat()
+
     for cat in CATEGORIES:
+        cat_id = cat.get("id", f"category_{cat['slug']}")
         try:
             bazaar_apps = fetch_bazaar_automatic_new_list(cat["bazaar_list_path"], cat["title_fa"])
             for app in bazaar_apps:
                 key = f"bazaar:{app['package']}"
+                all_discovered.append({
+                    "id": key,
+                    "market": "bazaar",
+                    "marketLabel": "کافه‌بازار",
+                    "packageName": app["package"],
+                    "name": app["name"],
+                    "author": app["author"],
+                    "version": app["version"],
+                    "iconUrl": app["icon"],
+                    "description": app["description"],
+                    "categoryId": cat_id,
+                    "categoryTitle": cat["title_fa"],
+                    "storeUrl": app["url"],
+                    "apiSourcePath": cat["bazaar_list_path"],
+                    "discoveredAt": now_iso,
+                })
                 if key not in seen_apps:
                     if send_to_telegram(app):
                         seen_apps.add(key)
@@ -364,6 +398,22 @@ def run_single_scan():
                 )
                 for app in myket_apps:
                     key = f"myket:{app['package']}"
+                    all_discovered.append({
+                        "id": key,
+                        "market": "myket",
+                        "marketLabel": "مایکت",
+                        "packageName": app["package"],
+                        "name": app["name"],
+                        "author": app["author"],
+                        "version": app["version"],
+                        "iconUrl": app["icon"],
+                        "description": app["description"],
+                        "categoryId": cat_id,
+                        "categoryTitle": cat["title_fa"],
+                        "storeUrl": app["url"],
+                        "apiSourcePath": f"v1/applications/package/{cat['myket_new_package_key']}",
+                        "discoveredAt": now_iso,
+                    })
                     if key not in seen_apps:
                         if send_to_telegram(app):
                             seen_apps.add(key)
@@ -373,7 +423,20 @@ def run_single_scan():
                 print(f"خطا در مایکت ({cat['title_fa']}): {e}")
 
     save_seen_apps(seen_apps)
-    print(f"اسکن کامل شد. {new_sent} برنامه جدید ارسال و در {SEEN_APPS_FILE} ذخیره شد.")
+    if all_discovered:
+        APPS_DATA_FILE.write_text(
+            json.dumps(
+                {
+                    "updatedAt": now_iso,
+                    "totalApps": len(all_discovered),
+                    "apps": all_discovered,
+                },
+                ensure_ascii=False,
+                indent=2,
+            ),
+            encoding="utf-8",
+        )
+    print(f"اسکن کامل شد. {new_sent} برنامه جدید ارسال و {len(all_discovered)} برنامه در {APPS_DATA_FILE} برای github.io ذخیره شد.")
 
 
 if __name__ == "__main__":

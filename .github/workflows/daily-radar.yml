@@ -1,10 +1,15 @@
-name: Bazar & Myket 24h Telegram Radar
+name: Bazar & Myket 24h Telegram Radar + GitHub Pages
 
 on:
   schedule:
     # اجرای خودکار هر ۲۴ ساعت یک‌بار (ساعت ۰۶:۰۰ به وقت UTC معادل ۰۹:۳۰ صبح ایران)
     - cron: '0 6 * * *'
   workflow_dispatch: # امکان اجرای دستی در هر لحظه از تب Actions گیت‌هاب
+  push:
+    branches: [ main, master ]
+    paths:
+      - 'bot.py'
+      - '.github/workflows/daily-radar.yml'
 
 permissions:
   contents: write
@@ -29,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Run CafeBazaar & Myket Newest Apps Radar
+      - name: Run CafeBazaar & Myket Newest Apps Radar (Updates apps_data.json for github.io)
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -37,9 +42,9 @@ jobs:
         run: |
           python bot.py
 
-      - name: Commit & Push Updated seen_apps.json
+      - name: Commit & Push Updated seen_apps.json & apps_data.json (Updates github.io Page)
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add seen_apps.json
-          git diff --staged --quiet || (git commit -m "chore: update seen_apps.json [skip ci]" && git push)
+          git add seen_apps.json apps_data.json
+          git diff --staged --quiet || (git commit -m "chore: update radar apps_data.json & seen_apps.json [skip ci]" && git push)
